@@ -17,7 +17,7 @@ vim.diagnostic.config({
 })
 
 -- Getting Rid Of Depreciation Warning For Linter
-vim.notify = function(msg, level, apts)
+vim.notify = function(msg, level, opts)
     if msg:match("lspconfig") then
         return
     end
