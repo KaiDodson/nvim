@@ -63,6 +63,9 @@ require("lazy").setup({
     "rcarriga/nvim-notify",
   },
   opts = {
+    lsp = {
+      progress = { enabled = false, },
+    },
     cmdline = {
       view = "cmdline_popup",
     },
