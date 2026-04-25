@@ -74,6 +74,13 @@ require("lazy").setup({
       },
       messages = { enabled = false },
       notify = { enabled = false },
+      cmdline = {view = "cmdline_popup"},
+      views = {
+          cmdline_popup = {
+              position = { row = 2, col = "50%" },
+              size = { width = 60, height = "auto" }
+          },
+      }
     },
   },
 
