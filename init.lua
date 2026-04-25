@@ -1,31 +1,31 @@
 
--- Basic Options
+-- Leader keys
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
+
+-- Basic Options
 vim.opt.number = true
 vim.opt.relativenumber = true
 vim.opt.expandtab = true
 vim.opt.shiftwidth = 4
 vim.opt.tabstop = 4
+vim.opt.termguicolors = true
 
--- Diagnostic Tools
+-- Diagnostics
 vim.diagnostic.config({
   virtual_text = false,
-  signs = true,
+  signs = false,
   underline = true,
   update_in_insert = false,
+  severity_sort = true,
 })
 
--- Getting Rid Of Depreciation Warning For Linter
-vim.notify = function(msg, level, opts)
-    if msg:match("lspconfig") then
-        return
-    end
+-- Toggle Diagnostics
+vim.keymap.set("n", "<leader>td", function()
+  vim.diagnostic.enable(not vim.diagnostic.is_enabled())
+end, { desc = "Toggle diagnostics" })
 
-    vim.api.nvim_notify(msg, level, opts)
-end
-
--- Bootstrap Lazy
+-- Bootstrap lazy.nvim
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not vim.loop.fs_stat(lazypath) then
   vim.fn.system({
@@ -39,7 +39,7 @@ if not vim.loop.fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
--- Load plugins Using Lazy-nvim
+-- Plugins
 require("lazy").setup({
 
   -- Theme
@@ -47,68 +47,42 @@ require("lazy").setup({
     "ellisonleao/gruvbox.nvim",
     priority = 1000,
     config = function()
-      require("gruvbox").setup({
-        transparent_mode = false,
-      })
+      require("gruvbox").setup({ transparent_mode = false })
       vim.cmd.colorscheme("gruvbox")
     end,
   },
 
+  -- Navigation
   {
     "folke/flash.nvim",
     event = "VeryLazy",
-    ---@type Flash.Config
     opts = {},
-    keys = {
-        { "s", mode = { "n", "x", "o" }, function() require("flash").jump() end, desc = "Flash" },
-        { "S", mode = { "n", "x", "o" }, function() require("flash").treesitter() end, desc = "Flash Treesitter" },
-        { "r", mode = "o", function() require("flash").remote() end, desc = "Remote Flash" },
-        { "R", mode = { "o", "x" }, function() require("flash").treesitter_search() end, desc = "Treesitter Search" },
-        { "<c-s>", mode = { "c" }, function() require("flash").toggle() end, desc = "Toggle Flash Search" },
-      },
   },
 
-  -- Floating Command Bar
+  -- Noice 
   {
-  "folke/noice.nvim",
-  event = "VeryLazy",
-  dependencies = {
-    "MunifTanjim/nui.nvim",
-    "rcarriga/nvim-notify",
-  },
-  opts = {
-    lsp = {
-      progress = { enabled = false, },
+    "folke/noice.nvim",
+    event = "VeryLazy",
+    dependencies = {
+      "MunifTanjim/nui.nvim",
+      "rcarriga/nvim-notify",
     },
-    cmdline = {
-      view = "cmdline_popup",
-    },
-    views = {
-      cmdline_popup = {
-        position = {
-          row = 2,
-          col = "50%",
-        },
-        size = {
-          width = 60,
-          height = "auto",
-        },
+    opts = {
+      lsp = {
+        progress = { enabled = false },
+        signature = { enabled = false },
       },
+      messages = { enabled = false },
+      notify = { enabled = false },
     },
-    messages = { enabled = true },
-    popupmenu = { enabled = true }
-  },
   },
 
-  -- File explorer
+  -- File Explorer
   {
     "nvim-tree/nvim-tree.lua",
     dependencies = { "nvim-tree/nvim-web-devicons" },
     config = function()
-      require("nvim-tree").setup({
-        view = { width = 20 },
-        filters = { dotfiles = false },
-      })
+      require("nvim-tree").setup({ view = { width = 25 } })
     end,
   },
 
@@ -126,22 +100,13 @@ require("lazy").setup({
     "nvim-treesitter/nvim-treesitter",
     build = ":TSUpdate",
     opts = {
-        ensure_installed = {
-            "javascript",
-            "typescript",
-            "html",
-            "css",
-            "lua",
-            "sql",
-            "json",
-            "c",
-            "cpp",
-            "python",
-            "java",
-        },
-        highlight = { enable = true },
-        indent = { enable = true },
-	}
+      ensure_installed = {
+        "javascript", "typescript", "html", "css",
+        "lua", "sql", "json", "c", "cpp", "python", "java",
+      },
+      highlight = { enable = true },
+      indent = { enable = true },
+    },
   },
 
   -- Git
@@ -160,28 +125,66 @@ require("lazy").setup({
     end,
   },
 
-    -- Linting & Diagnostic
-    {
-        "neovim/nvim-lspconfig",
-        dependencies = { "hrsh7th/cmp-nvim-lsp" },
-        config = function()
-            local lspconfig = require("lspconfig")
-            local capabilities = require("cmp_nvim_lsp").default_capabilities()
+  -- Mason
+  {
+    "williamboman/mason.nvim",
+    build = ":MasonUpdate",
+    config = function()
+      require("mason").setup()
+    end,
+  },
 
-            lspconfig.html.setup({ capabilities = capabilities })
-            lspconfig.cssls.setup({ capabilities = capabilities })
-            lspconfig.ts_ls.setup({ capabilities = capabilities })
-            lspconfig.pyright.setup({ capabilities = capabilities })
-            lspconfig.jdtls.setup({ capabilities = capabilities })
-            lspconfig.clangd.setup({ capabilities = capabilities })
-        end,
+  {
+    "williamboman/mason-lspconfig.nvim",
+    dependencies = { "williamboman/mason.nvim" },
+    config = function()
+      require("mason-lspconfig").setup({
+        ensure_installed = {
+          "html",
+          "cssls",
+          "ts_ls",
+          "pyright",
+          "jdtls",
+          "clangd",
+        },
+      })
+    end,
+  },
+
+  -- LSP
+  {
+    "neovim/nvim-lspconfig",
+    dependencies = {
+      "hrsh7th/cmp-nvim-lsp",
+      "williamboman/mason-lspconfig.nvim",
     },
+    config = function()
+      local capabilities = require("cmp_nvim_lsp").default_capabilities()
 
-    -- Simple Autocomplete
-    {
+      local servers = {
+        "html",
+        "cssls",
+        "ts_ls",
+        "pyright",
+        "jdtls",
+        "clangd",
+      }
+
+      for _, server in ipairs(servers) do
+        vim.lsp.config(server, {
+          capabilities = capabilities,
+        })
+      end
+    end,
+  },
+
+  -- Autocomplete
+  {
     "hrsh7th/nvim-cmp",
     dependencies = {
       "hrsh7th/cmp-nvim-lsp",
+      "hrsh7th/cmp-path",
+      "hrsh7th/cmp-buffer",
       "L3MON4D3/LuaSnip",
     },
     config = function()
@@ -201,6 +204,8 @@ require("lazy").setup({
         }),
         sources = {
           { name = "nvim_lsp" },
+          { name = "path" },
+          { name = "buffer" },
         },
       })
     end,
@@ -209,20 +214,17 @@ require("lazy").setup({
 })
 
 -- Keybindings
-vim.keymap.set("n", "<leader>e", ":NvimTreeToggle<CR>", { desc = "Toggle file explorer" })
-vim.keymap.set("n", "<leader>ff", ":Telescope find_files<CR>", { desc = "Find files" })
--- vim.keymap.set("n", "<leader>fg", ":Telescope live_grep<CR>", { desc = "Live grep" })
-vim.keymap.set("n", "<leader>fb", ":Telescope buffers<CR>", { desc = "Find buffers" })
-vim.keymap.set("n", "<C-s>", ":w<CR>", { desc = "Save file" })
-vim.keymap.set("i", "<C-s>", "<Esc>:w<CR>a", { desc = "Save file in insert mode" })
-vim.keymap.set("i", "<C-BS>", "<C-w>", { noremap = true })
-vim.keymap.set("i", "<C-H>", "<C-w>", { noremap = true })
+vim.keymap.set("n", "<leader>e", ":NvimTreeToggle<CR>")
+vim.keymap.set("n", "<leader>ff", ":Telescope find_files<CR>")
+vim.keymap.set("n", "<leader>fb", ":Telescope buffers<CR>")
+vim.keymap.set("n", "<C-s>", ":w<CR>")
+vim.keymap.set("i", "<C-s>", "<Esc>:w<CR>a")
 
--- Window navigation
-vim.keymap.set("n", "<C-h>", "<C-w>h", { desc = "Move to left window" })
-vim.keymap.set("n", "<C-j>", "<C-w>j", { desc = "Move to bottom window" })
-vim.keymap.set("n", "<C-k>", "<C-w>k", { desc = "Move to top window" })
-vim.keymap.set("n", "<C-l>", "<C-w>l", { desc = "Move to right window" })
+-- Window Navigation
+vim.keymap.set("n", "<C-h>", "<C-w>h")
+vim.keymap.set("n", "<C-j>", "<C-w>j")
+vim.keymap.set("n", "<C-k>", "<C-w>k")
+vim.keymap.set("n", "<C-l>", "<C-w>l")
 
 -- LSP Navigation
 vim.keymap.set("n", "K", vim.lsp.buf.hover)
