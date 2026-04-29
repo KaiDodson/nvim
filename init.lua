@@ -58,12 +58,12 @@ require("lazy").setup({
     event = "VeryLazy",
     opts = {},
     keys = {
-        { "s", mode = { "n", "x", "o" }, function() require("flash").jump() end, desc = "Flash" },
-        { "S", mode = { "n", "x", "o" }, function() require("flash").treesitter() end, desc = "Flash Treesitter" },
-        { "r", mode = "o", function() require("flash").remote() end, desc = "Remote Flash" },
-        { "R", mode = { "o", "x" }, function() require("flash").treesitter_search() end, desc = "Treesitter Search" },
-        { "<c-s>", mode = { "c" }, function() require("flash").toggle() end, desc = "Toggle Flash Search" },
-      },
+      { "s", mode = { "n", "x", "o" }, function() require("flash").jump() end, desc = "Flash" },
+      { "S", mode = { "n", "x", "o" }, function() require("flash").treesitter() end, desc = "Flash Treesitter" },
+      { "r", mode = "o", function() require("flash").remote() end, desc = "Remote Flash" },
+      { "R", mode = { "o", "x" }, function() require("flash").treesitter_search() end, desc = "Treesitter Search" },
+      { "<c-s>", mode = { "c" }, function() require("flash").toggle() end, desc = "Toggle Flash Search" },
+    },
   },
 
   -- Noice 
@@ -81,12 +81,12 @@ require("lazy").setup({
       },
       messages = { enabled = false },
       notify = { enabled = false },
-      cmdline = {view = "cmdline_popup"},
+      cmdline = { view = "cmdline_popup" },
       views = {
-          cmdline_popup = {
-              position = { row = 2, col = "50%" },
-              size = { width = 60, height = "auto" }
-          },
+        cmdline_popup = {
+          position = { row = 2, col = "50%" },
+          size = { width = 60, height = "auto" }
+        },
       }
     },
   },
@@ -153,19 +153,20 @@ require("lazy").setup({
     dependencies = { "williamboman/mason.nvim" },
     config = function()
       require("mason-lspconfig").setup({
-          ensure_installed = {
-              "html",
-              "cssls",
-              "tsserver",
-              "pyright",
-              "clangd",
-              "lua_ls",
-            },
-        })
+        ensure_installed = {
+          "html",
+          "cssls",
+          "ts_ls",
+          "pyright",
+          "clangd",
+          "lua_ls",
+          "jdtls",
+        },
+      })
     end,
   },
 
-  -- LSP
+  -- LSP (Neovim 0.11 style)
   {
     "neovim/nvim-lspconfig",
     dependencies = {
@@ -180,14 +181,15 @@ require("lazy").setup({
         "cssls",
         "ts_ls",
         "pyright",
-        "jdtls",
         "clangd",
+        "lua_ls",
       }
 
       for _, server in ipairs(servers) do
         vim.lsp.config(server, {
           capabilities = capabilities,
         })
+        vim.lsp.enable(server)
       end
     end,
   },
@@ -225,6 +227,35 @@ require("lazy").setup({
     end,
   },
 
+  -- Java LSP (separate)
+  {
+    "mfussenegger/nvim-jdtls",
+    ft = "java",
+  },
+
+})
+
+-- Java LSP setup (lightweight + fast)
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "java",
+  callback = function()
+    local jdtls = require("jdtls")
+    local home = os.getenv("HOME")
+
+    local workspace_dir = home .. "/.local/share/jdtls-workspace/"
+      .. vim.fn.fnamemodify(vim.fn.getcwd(), ":p:h:t")
+
+    local config = {
+      cmd = { "jdtls" },
+      root_dir = require("jdtls.setup").find_root({
+        ".git", "mvnw", "gradlew", "pom.xml", "build.gradle"
+      }),
+      workspace_folder = workspace_dir,
+      capabilities = require("cmp_nvim_lsp").default_capabilities(),
+    }
+
+    jdtls.start_or_attach(config)
+  end,
 })
 
 -- Keybindings
