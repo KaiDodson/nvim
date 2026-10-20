@@ -84,7 +84,7 @@ require("lazy").setup({
       cmdline = { view = "cmdline_popup" },
       views = {
         cmdline_popup = {
-          position = { row = 2, col = "50%" },
+          position = { row = 5, col = "50%" },
           size = { width = 60, height = "auto" }
         },
       }
@@ -191,6 +191,17 @@ require("lazy").setup({
         })
         vim.lsp.enable(server)
       end
+
+      -- C/C++: run clang-tidy linting inside clangd (config in ~/.clang-tidy)
+      vim.lsp.config("clangd", {
+        capabilities = capabilities,
+        cmd = {
+          "clangd",
+          "--clang-tidy",
+          "--background-index",
+          "--header-insertion=never",
+        },
+      })
     end,
   },
 
@@ -231,6 +242,52 @@ require("lazy").setup({
   {
     "mfussenegger/nvim-jdtls",
     ft = "java",
+  },
+
+  -- Dashboard / start screen
+  {
+    "folke/snacks.nvim",
+    priority = 1000,
+    lazy = false,
+    opts = {
+      dashboard = {
+        enabled = true,
+        preset = {
+          header = [[
+ __  __   ______  ______     
+/\ \/\ \ /\  _  \/\__  _\    
+\ \ \/'/'\ \ \L\ \/_/\ \/    
+ \ \ , <  \ \  __ \ \ \ \    
+  \ \ \\`\ \ \ \/\ \ \_\ \__ 
+   \ \_\ \_\\ \_\ \_\/\_____\
+    \/_/\/_/ \/_/\/_/\/_____/]],
+          keys = {
+            { icon = " ", key = "f", desc = "Find File",     action = ":Telescope find_files" },
+            { icon = " ", key = "n", desc = "New File",      action = ":ene | startinsert" },
+            { icon = " ", key = "r", desc = "Recent Files",  action = ":Telescope oldfiles" },
+            { icon = " ", key = "g", desc = "Find Text",     action = ":Telescope live_grep" },
+            { icon = " ", key = "e", desc = "File Explorer", action = ":NvimTreeToggle" },
+            { icon = " ", key = "c", desc = "Config",        action = ":e $MYVIMRC" },
+            { icon = "\u{f0908} ", key = "l", desc = "Lazy",          action = ":Lazy" },
+            { icon = " ", key = "m", desc = "Mason",         action = ":Mason" },
+            { icon = " ", key = "q", desc = "Quit",          action = ":qa" },
+          },
+        },
+        sections = {
+          { section = "header" },
+          { section = "keys", gap = 1, padding = 1 },
+          { section = "startup" },
+        },
+      },
+    },
+    init = function()
+      -- gruvbox loads after this, so reapply the accent on every colorscheme.
+      local function accent()
+        vim.api.nvim_set_hl(0, "SnacksDashboardHeader", { fg = "#d8a657" })
+      end
+      accent()
+      vim.api.nvim_create_autocmd("ColorScheme", { callback = accent })
+    end,
   },
 
 })
